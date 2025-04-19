@@ -68,25 +68,36 @@ export default function ChatArea({
   useEffect(() => {
     if (!lastMessage) return;
     
+    console.log("ChatArea: WebSocket message received:", lastMessage);
+    
     // Check if the message is for the current conversation
     const messagePayload = lastMessage.payload || {};
     const messageConversationId = messagePayload.conversationId;
     
+    console.log("ChatArea: Comparing message conversationId", messageConversationId, "with current", conversationId);
+    
     if (messageConversationId === conversationId) {
+      console.log("ChatArea: Message matches current conversation, type:", lastMessage.type);
+      
       switch (lastMessage.type) {
         case 'new_message':
-          // Refresh messages when a new message arrives
+          console.log("ChatArea: Refreshing messages for new_message");
           refetchMessages();
           break;
         case 'message_edited':
-          // Refresh messages when a message is edited
+          console.log("ChatArea: Refreshing messages for message_edited");
           refetchMessages();
           break;
         case 'message_deleted':
-          // Refresh messages when a message is deleted
+          console.log("ChatArea: Refreshing messages for message_deleted");
           refetchMessages();
           break;
+        default:
+          console.log("ChatArea: Ignoring message type:", lastMessage.type);
+          break;
       }
+    } else {
+      console.log("ChatArea: Message is for different conversation, ignoring");
     }
   }, [lastMessage, conversationId, refetchMessages]);
 

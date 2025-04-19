@@ -47,10 +47,12 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
         
         // Authenticate the WebSocket connection with userId
         try {
-          socket.send(JSON.stringify({
+          const authMessage = {
             type: "auth",
             payload: { userId: user.id }
-          }));
+          };
+          console.log("Sending WebSocket authentication:", authMessage);
+          socket.send(JSON.stringify(authMessage));
         } catch (error) {
           console.error("Error authenticating WebSocket:", error);
         }
@@ -59,6 +61,18 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
       socket.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
+          console.log("WebSocket message received:", message);
+          
+          // Handle auth_success message specifically
+          if (message.type === "auth_success") {
+            console.log("WebSocket authentication successful!");
+            toast({
+              title: "Connected",
+              description: "Real-time messaging connection established",
+              variant: "default"
+            });
+          }
+          
           setLastMessage(message);
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);

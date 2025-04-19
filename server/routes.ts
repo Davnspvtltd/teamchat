@@ -266,16 +266,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const message = await storage.createMessage(validatedData);
       res.status(201).json(message);
       
+      console.log(`Message created by user ${req.user.id} for conversation ${validatedData.conversationId}. Now sending WebSocket notifications...`);
+      
       // Send notification to all members via WebSocket
       for (const member of members) {
-        if (member.userId !== req.user.id) { // Don't notify the sender
-          const client = clients.get(member.userId);
-          if (client && client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              type: 'new_message',
-              payload: message
-            }));
+        console.log(`Processing member ${member.userId} for WebSocket notification`);
+        
+        // Send to both the sender and other members to ensure all clients update
+        const client = clients.get(member.userId);
+        if (client && client.readyState === WebSocket.OPEN) {
+          console.log(`Sending WebSocket notification to user ${member.userId}`);
+          
+          const notification = {
+            type: 'new_message',
+            payload: message
+          };
+          
+          try {
+            client.send(JSON.stringify(notification));
+            console.log(`Successfully sent WebSocket notification to user ${member.userId}`);
+          } catch (error) {
+            console.error(`Failed to send WebSocket notification to user ${member.userId}:`, error);
           }
+        } else {
+          console.log(`Cannot send WebSocket notification to user ${member.userId}: ${client ? 'Not in OPEN state' : 'No connection'}`);
         }
       }
     } catch (error) {
@@ -374,10 +388,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // WebSocket setup
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  console.log("WebSocket server initialized with path: /ws");
 
   const clients = new Map<number, WebSocketClient>();
 
   wss.on('connection', (ws: WebSocketClient) => {
+    console.log("New WebSocket connection established");
+    
     ws.on('message', async (message: string) => {
       try {
         const parsedMessage: WebSocketMessage = JSON.parse(message);
@@ -386,17 +404,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
           case 'auth':
             // Authenticate the WebSocket connection
             if (parsedMessage.payload && parsedMessage.payload.userId) {
-              ws.userId = parsedMessage.payload.userId;
-              clients.set(parsedMessage.payload.userId, ws);
+              const userId = parsedMessage.payload.userId;
+              console.log(`Authenticating WebSocket connection for user ${userId}`);
+              
+              // Check if user exists
+              const user = await storage.getUser(userId);
+              if (!user) {
+                console.error(`WebSocket authentication failed: User ${userId} not found`);
+                break;
+              }
+              
+              // Close any existing connection for this user
+              const existingConnection = clients.get(userId);
+              if (existingConnection) {
+                console.log(`Closing existing WebSocket connection for user ${userId}`);
+                if (existingConnection.readyState === WebSocket.OPEN) {
+                  existingConnection.close();
+                }
+              }
+              
+              // Set up the new connection
+              ws.userId = userId;
+              clients.set(userId, ws);
+              console.log(`WebSocket connection authenticated for user ${userId}`);
+              
+              // Send confirmation to the client
+              try {
+                ws.send(JSON.stringify({
+                  type: 'auth_success',
+                  payload: { userId }
+                }));
+                console.log(`Authentication success message sent to user ${userId}`);
+              } catch (error) {
+                console.error(`Failed to send auth success message to user ${userId}:`, error);
+              }
               
               // Notify other clients about this user's online status
-              broadcastToAll({
-                type: 'user_status',
-                payload: {
-                  userId: ws.userId,
-                  status: 'online'
-                }
-              }, ws.userId);
+              try {
+                broadcastToAll({
+                  type: 'user_status',
+                  payload: {
+                    userId: ws.userId,
+                    status: 'online'
+                  }
+                }, ws.userId);
+                console.log(`Online status broadcast sent for user ${userId}`);
+              } catch (error) {
+                console.error(`Failed to broadcast online status for user ${userId}:`, error);
+              }
+            } else {
+              console.error('WebSocket authentication failed: Missing userId in payload');
             }
             break;
             
