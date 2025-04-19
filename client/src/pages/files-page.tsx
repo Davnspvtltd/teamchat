@@ -37,11 +37,11 @@ import {
   ImageIcon,
   FileText,
   FileSpreadsheet,
-  FilePdf,
-  FileArchive,
-  FileVideo,
-  FileAudio,
-  FileCode,
+  FileIcon,
+  Archive,
+  Video,
+  Music,
+  Code,
   MoreVertical,
   Download,
   Trash,
@@ -114,7 +114,7 @@ export default function FilesPage() {
   const getIconForFileType = (type: string) => {
     switch (type) {
       case "pdf":
-        return <FilePdf className="h-6 w-6 text-red-500" />;
+        return <FileIcon className="h-6 w-6 text-red-500" />;
       case "document":
         return <FileText className="h-6 w-6 text-blue-500" />;
       case "spreadsheet":
@@ -124,13 +124,13 @@ export default function FilesPage() {
       case "presentation":
         return <FileText className="h-6 w-6 text-orange-500" />;
       case "archive":
-        return <FileArchive className="h-6 w-6 text-yellow-500" />;
+        return <Archive className="h-6 w-6 text-yellow-500" />;
       case "video":
-        return <FileVideo className="h-6 w-6 text-pink-500" />;
+        return <Video className="h-6 w-6 text-pink-500" />;
       case "audio":
-        return <FileAudio className="h-6 w-6 text-teal-500" />;
+        return <Music className="h-6 w-6 text-teal-500" />;
       case "code":
-        return <FileCode className="h-6 w-6 text-gray-500" />;
+        return <Code className="h-6 w-6 text-gray-500" />;
       default:
         return <File className="h-6 w-6 text-gray-500" />;
     }

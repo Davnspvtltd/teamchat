@@ -6,6 +6,10 @@ import ConversationsList from "@/components/conversations-list";
 import ChatArea from "@/components/chat-area";
 import UserProfileModal from "@/components/user-profile-modal";
 import CreateGroupModal from "@/components/create-group-modal";
+import CalendarPage from "@/pages/calendar-page";
+import FilesPage from "@/pages/files-page";
+import SettingsPage from "@/pages/settings-page";
+import ProfilePage from "@/pages/profile-page";
 import { useWebSocket } from "@/lib/websocket";
 import { Conversation, User, Message } from "@shared/schema";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -281,8 +285,16 @@ export default function HomePage() {
             )}
           </div>
         </div>
+      ) : activeSection === "files" ? (
+        <FilesPage />
+      ) : activeSection === "calendar" ? (
+        <CalendarPage />
+      ) : activeSection === "settings" ? (
+        <SettingsPage />
+      ) : activeSection === "profile" ? (
+        <ProfilePage />
       ) : (
-        // Placeholder for other sections (files, calendar, settings)
+        // Placeholder for any other sections
         <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-800">
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4">{activeSection.charAt(0).toUpperCase() + activeSection.slice(1)}</h2>

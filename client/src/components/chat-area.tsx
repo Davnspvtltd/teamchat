@@ -22,7 +22,7 @@ export default function ChatArea({
   typingUsers
 }: ChatAreaProps) {
   const { user: currentUser } = useAuth();
-  const { sendMessage } = useWebSocket();
+  const { sendMessage, lastMessage } = useWebSocket();
   const [messageText, setMessageText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -63,6 +63,16 @@ export default function ChatArea({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+  
+  // Listen for new messages via WebSocket
+  useEffect(() => {
+    if (lastMessage && lastMessage.type === 'new_message') {
+      // Only refresh if the message belongs to the current conversation
+      if (lastMessage.payload && lastMessage.payload.conversationId === conversationId) {
+        refetchMessages();
+      }
+    }
+  }, [lastMessage, conversationId, refetchMessages]);
 
   // Get conversation name and profile picture for header
   const getConversationDisplayInfo = () => {
