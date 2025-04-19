@@ -1,6 +1,11 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { testDatabaseConnection } from "./db";
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 const app = express();
 app.use(express.json());
@@ -37,6 +42,21 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Test database connection before starting the server
+  try {
+    const dbConnected = await testDatabaseConnection();
+    if (dbConnected) {
+      log("Database connection test successful");
+    } else {
+      console.error("Failed to connect to database. Please check your DATABASE_URL in .env file.");
+      console.error("Current DATABASE_URL: " + (process.env.DATABASE_URL?.replace(/:.+@/, ":****@") || 'not set')); // Hide password in logs
+      // Continue anyway as the app might work with some features without DB
+      console.warn("Starting server without database connection. Some features may not work.");
+    }
+  } catch (error) {
+    console.error("Error testing database connection:", error);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -56,15 +76,32 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
+  // Get PORT from environment variables with fallback to 5000
+  const port = parseInt(process.env.PORT || "5000", 10);
+  
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`Server running in ${process.env.NODE_ENV || 'development'} mode`);
+    log(`Serving on port ${port}`);
+    if (process.env.DATABASE_URL) {
+      log(`Using database: ${process.env.DATABASE_URL.replace(/:.+@/, ":****@")}`); // Hide password in logs
+    } else {
+      log("No DATABASE_URL found in environment");
+    }
+  });
+
+  // Handle uncaught exceptions
+  process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    // Don't exit the process as it would kill the server
+  });
+
+  // Handle unhandled promise rejections
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    // Don't exit the process as it would kill the server
   });
 })();
