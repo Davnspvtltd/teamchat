@@ -62,6 +62,10 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
       socket.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
+          
+          // Add a timestamp when the message was received
+          message._receivedAt = Date.now();
+          
           console.log("WebSocket message received:", message);
           
           // Handle auth_success message specifically
@@ -74,7 +78,11 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
             });
           }
           
-          setLastMessage(message);
+          // If this is a pong response, don't reset lastMessage or show toast
+          // This keeps our connection alive without spamming the UI
+          if (message.type !== "pong") {
+            setLastMessage(message);
+          }
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);
         }
@@ -84,22 +92,44 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
         console.log(`WebSocket disconnected with code ${event.code}`);
         setConnected(false);
         
-        // Try to reconnect if not a normal closure and we have not exceeded max attempts
-        if (event.code !== 1000 && reconnectAttemptsRef.current < maxReconnectAttempts) {
-          const timeout = Math.min(1000 * (2 ** reconnectAttemptsRef.current), 30000);
+        // Consider 1005 (no status) and 1006 (abnormal closure) as non-fatal errors
+        // that require reconnection. 1000 is normal closure (e.g. user logged out)
+        const nonFatalCodes = [1005, 1006, 1001, 1012, 1013];
+        const shouldReconnect = event.code !== 1000 && 
+          (nonFatalCodes.includes(event.code) || reconnectAttemptsRef.current < maxReconnectAttempts);
+        
+        if (shouldReconnect) {
+          // Implement exponential backoff with a minimum of 1 second and max of 30 seconds
+          const timeout = Math.min(1000 * Math.pow(1.5, reconnectAttemptsRef.current), 30000);
           console.log(`Attempting to reconnect in ${timeout}ms (attempt ${reconnectAttemptsRef.current + 1})`);
+          
+          // Clear any existing timeout
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+          }
           
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttemptsRef.current += 1;
-            socketRef.current = setupWebSocket();
+            
+            // Only attempt to reconnect if the user is still logged in
+            if (user) {
+              console.log(`Attempting reconnection, attempt ${reconnectAttemptsRef.current}`);
+              socketRef.current = setupWebSocket();
+            } else {
+              console.log("User logged out, abandoning reconnection attempts");
+            }
           }, timeout);
         } else if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
           console.log("Max reconnect attempts reached, giving up");
-          toast({
-            title: "Connection lost",
-            description: "Could not reconnect to the messaging service",
-            variant: "destructive"
-          });
+          
+          // Only show the toast if user hasn't manually logged out (code 1000)
+          if (event.code !== 1000) {
+            toast({
+              title: "Connection lost",
+              description: "Could not reconnect to the messaging service. Please refresh the page.",
+              variant: "destructive"
+            });
+          }
         }
       };
 
@@ -163,22 +193,74 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user]);
 
-  // Periodic ping to keep the connection alive
+  // Heartbeat mechanism to keep the connection alive and detect stale connections
   useEffect(() => {
     if (!connected) return;
-
+    
+    // Send more frequent pings (every 15 seconds) to prevent connection timeouts
     const pingInterval = setInterval(() => {
       if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
         try {
+          console.log("Sending ping to keep WebSocket connection alive");
           socketRef.current.send(JSON.stringify({ type: "ping" }));
         } catch (error) {
           console.error("Error sending ping:", error);
+          
+          // If we can't send a ping, the connection might be dead but not yet detected
+          // Force a reconnection
+          try {
+            console.log("Ping failed, forcing reconnection");
+            if (socketRef.current) {
+              socketRef.current.close(1000, "Ping failed");
+            }
+            // Reset connection
+            reconnectAttemptsRef.current = 0;
+            setTimeout(() => {
+              socketRef.current = setupWebSocket();
+            }, 1000);
+          } catch (closeError) {
+            console.error("Error force-closing WebSocket:", closeError);
+          }
+        }
+      } else if (socketRef.current) {
+        console.log(`WebSocket not in OPEN state, current state: ${socketRef.current.readyState}`);
+      }
+    }, 15000); // Send ping every 15 seconds
+    
+    // Add a secondary heartbeat check every 45 seconds to detect
+    // connections that appear open but are actually stale
+    const heartbeatInterval = setInterval(() => {
+      if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+        console.log("Running WebSocket heartbeat check");
+        // If lastPingTime exists and it's been more than 60 seconds since we received 
+        // any message, assume the connection is stale
+        const lastMessageTime = lastMessage ? new Date(lastMessage._receivedAt || 0).getTime() : 0;
+        const now = Date.now();
+        const threshold = 60000; // 60 seconds
+        
+        if (lastMessageTime && (now - lastMessageTime > threshold)) {
+          console.log(`No message received in ${(now - lastMessageTime) / 1000} seconds, forcing reconnection`);
+          try {
+            if (socketRef.current) {
+              socketRef.current.close(1000, "Heartbeat timeout");
+            }
+            // Reset connection
+            reconnectAttemptsRef.current = 0;
+            setTimeout(() => {
+              socketRef.current = setupWebSocket();
+            }, 1000);
+          } catch (error) {
+            console.error("Error force-closing stale WebSocket:", error);
+          }
         }
       }
-    }, 30000); // Send ping every 30 seconds
+    }, 45000); // Check every 45 seconds
 
-    return () => clearInterval(pingInterval);
-  }, [connected]);
+    return () => {
+      clearInterval(pingInterval);
+      clearInterval(heartbeatInterval);
+    };
+  }, [connected, lastMessage]);
 
   // Send message to server with retry capability
   const sendMessage = (type: string, payload: any) => {

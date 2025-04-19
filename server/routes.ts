@@ -399,6 +399,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('message', async (message: string) => {
       try {
         const parsedMessage: WebSocketMessage = JSON.parse(message);
+        console.log(`Received WebSocket message of type ${parsedMessage.type}`);
+        
+        // Handle ping messages for heartbeat
+        if (parsedMessage.type === 'ping') {
+          try {
+            ws.send(JSON.stringify({ type: 'pong' }));
+            return;
+          } catch (error) {
+            console.error("Error sending pong response:", error);
+          }
+        }
         
         switch (parsedMessage.type) {
           case 'auth':
@@ -537,22 +548,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
 
-    ws.on('close', async () => {
+    ws.on('close', async (code, reason) => {
+      console.log(`WebSocket connection closed with code ${code}, reason: ${reason || 'No reason provided'}`);
+      
       if (ws.userId) {
+        console.log(`User ${ws.userId} disconnected, setting status to offline`);
+        
         // Update user status to offline
-        await storage.updateUserAvailability(ws.userId, 'offline');
+        try {
+          await storage.updateUserAvailability(ws.userId, 'offline');
+          console.log(`Successfully updated user ${ws.userId} availability to offline`);
+        } catch (error) {
+          console.error(`Failed to update availability for user ${ws.userId}:`, error);
+        }
         
         // Remove client from map
         clients.delete(ws.userId);
         
         // Notify other clients about this user's offline status
-        broadcastToAll({
-          type: 'user_status',
-          payload: {
-            userId: ws.userId,
-            status: 'offline'
-          }
-        }, ws.userId);
+        try {
+          broadcastToAll({
+            type: 'user_status',
+            payload: {
+              userId: ws.userId,
+              status: 'offline'
+            }
+          }, ws.userId);
+          console.log(`Successfully broadcast offline status for user ${ws.userId}`);
+        } catch (error) {
+          console.error(`Failed to broadcast offline status for user ${ws.userId}:`, error);
+        }
       }
     });
   });
