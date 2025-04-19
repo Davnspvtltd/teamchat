@@ -1,0 +1,98 @@
+### 🔐 Authentication & User Management
+- Sign up & login using email, phone number, or a single sign-on method    
+- Editable user profiles including:
+  - Name  
+  - Designation  
+  - Profile Picture  
+  - Bio  
+  - Custom status messages  
+- Availability indicators:
+  - Online  
+  - Busy  
+  - Away  
+  - Do Not Disturb  
+  - Offline  
+- Company directory organized by teams or departments
+
+---
+
+### 💬 Messaging System
+
+#### 🧍‍♂️ One-on-One Chat
+- Real-time personal messaging  
+- Message reactions (like, laugh, etc.)  
+- Delivery and read receipts  
+- Edit or delete messages  
+- Forward, reply, and quote messages  
+
+#### 👥 Group Chat
+- Create groups with:
+  - Group name  
+  - Description  
+  - Icon and cover image  
+  - Invite-only access (optional)  
+- Admin Controls:
+  - Add or remove members  
+  - Promote or demote admins  
+  - Enable or disable messaging for members  
+  - Pin important messages  
+- Group Settings:
+  - Mute notifications  
+  - View shared media  
+  - Set group-specific rules  
+  - Schedule meetings directly inside the group
+
+---
+
+### 📂 File & Media Sharing
+- Share photos, videos, documents, and files  
+- Drag-and-drop uploads  
+- File previews before download  
+- Cloud storage compatibility for media backup
+
+---
+
+### 🧠 Smart AI-Powered Features
+- Suggested replies for faster communication  
+- AI-based chat summaries  
+- Auto-tagging of important messages (e.g., tasks, reminders)  
+- Virtual assistant for FAQs and quick help
+
+---
+
+### 📅 Built-In Collaboration
+- Integrated calendar for event scheduling  
+- Task creation and assignment within chats  
+- Group polls and votes  
+- Announcement pins and threaded replies  
+- Track who has seen a message with read-by list  
+
+---
+
+### 📲 User Interface Experience
+- Clean, intuitive modern design  
+- Light and Dark Mode options  
+- Customizable themes and accents  
+- Typing indicators and real-time status  
+- Message threads for structured conversations  
+- Emojis, stickers, and GIF support  
+
+---
+
+### 🔒 Security & Privacy
+- End-to-End message encryption  
+- Secure media/file transfers  
+- Protection against brute-force attacks  
+- Detailed admin activity logs  
+- Privacy-compliant data handling (e.g., user data download/delete options)
+
+---
+
+### 📈 Optional Add-ons
+- Real-time analytics dashboard for admins  
+- Automatic team/department group creation  
+- Multi-language support  
+- Voice and video calls  
+- Screen sharing capabilities  
+- Push notifications with actionable buttons  
+- Custom emoji and sticker packs   without any errors create it, Did you forget to add the page to the router? in all page there are many issue site gets blank it is working perfect, there are some issues the message i sent is only visible for the reciver i cant able to see and add database also MYsql, there are some more issues 1. the sent meesages are visible too late, 2.in the left side calander, contact, folder button are not working 4if a person create a group it is not visible for the othere 5. the sent image is cant view by the opposite person everything is good and working perfect, issues 1. i can't cange my Profile picture, then add requirements fils to run in my vs code then, 3. allow to view the group members add exit group button. add show the recent sent/recived messages at the top and mark it in green dot untill we open
