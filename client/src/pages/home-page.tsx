@@ -43,9 +43,16 @@ export default function HomePage() {
     queryKey: ["/api/users"],
   });
 
+  // Debug logging for selected conversation
+  useEffect(() => {
+    console.log("HomePage: Selected conversation changed to", selectedConversation);
+  }, [selectedConversation]);
+
   // Process WebSocket messages
   useEffect(() => {
     if (!lastMessage) return;
+    
+    console.log("HomePage: WebSocket message received:", lastMessage);
 
     switch (lastMessage.type) {
       case 'new_message':

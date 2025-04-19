@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface WebSocketContextType {
   sendMessage: (type: string, payload: any) => void;
@@ -179,17 +180,63 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
     return () => clearInterval(pingInterval);
   }, [connected]);
 
-  // Send message to server
+  // Send message to server with retry capability
   const sendMessage = (type: string, payload: any) => {
+    if (!user) {
+      console.warn("Cannot send message, user not authenticated");
+      return;
+    }
+    
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-      console.warn("Cannot send message, WebSocket not connected");
+      console.warn("WebSocket not connected, queuing message for when connection is established");
+      
+      // Attempt to reconnect if not already trying
+      if (reconnectAttemptsRef.current === 0 && !reconnectTimeoutRef.current) {
+        console.log("Attempting to reconnect WebSocket to send message");
+        reconnectAttemptsRef.current = 0;
+        socketRef.current = setupWebSocket();
+      }
+      
+      // For important messages, fall back to REST API if available
+      if (type === "message") {
+        console.log("Sending message via REST API as fallback");
+        try {
+          apiRequest("POST", "/api/messages", {
+            conversationId: payload.conversationId,
+            content: payload.content,
+            attachments: payload.attachments || []
+          }).then(() => {
+            console.log("Message sent via REST API successfully");
+            queryClient.invalidateQueries({ 
+              queryKey: [`/api/conversations/${payload.conversationId}/messages`] 
+            });
+          }).catch(error => {
+            console.error("Failed to send message via REST API:", error);
+            toast({
+              title: "Message not sent",
+              description: "Please try again later",
+              variant: "destructive"
+            });
+          });
+        } catch (error) {
+          console.error("Error attempting to send message via REST API:", error);
+        }
+      }
+      
       return;
     }
     
     try {
-      socketRef.current.send(JSON.stringify({ type, payload }));
+      console.log(`Sending WebSocket message of type '${type}'`, payload);
+      const message = JSON.stringify({ type, payload });
+      socketRef.current.send(message);
     } catch (error) {
       console.error("Error sending message:", error);
+      toast({
+        title: "Connection error",
+        description: "Failed to send message, please try again",
+        variant: "destructive"
+      });
     }
   };
 

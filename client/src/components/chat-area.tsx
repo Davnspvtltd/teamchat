@@ -39,9 +39,14 @@ export default function ChatArea({
   });
 
   // Fetch messages for the conversation
-  const { data: messages, refetch: refetchMessages } = useQuery<Message[]>({
+  const { 
+    data: messages, 
+    refetch: refetchMessages,
+    isLoading: messagesLoading
+  } = useQuery<Message[]>({
     queryKey: [`/api/conversations/${conversationId}/messages`],
     enabled: !!conversationId,
+    staleTime: 5000, // Consider data fresh for 5 seconds
   });
 
   // Send message mutation
