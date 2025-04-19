@@ -265,6 +265,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const message = await storage.createMessage(validatedData);
       res.status(201).json(message);
+      
+      // Send notification to all members via WebSocket
+      for (const member of members) {
+        if (member.userId !== req.user.id) { // Don't notify the sender
+          const client = clients.get(member.userId);
+          if (client && client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              type: 'new_message',
+              payload: message
+            }));
+          }
+        }
+      }
     } catch (error) {
       next(error);
     }
@@ -288,6 +301,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       await storage.deleteMessage(messageId);
       res.status(200).json({ message: "Message deleted successfully" });
+      
+      // Notify conversation members about the deleted message
+      const members = await storage.getConversationMembers(message.conversationId);
+      for (const member of members) {
+        if (member.userId !== req.user.id) { // Don't notify the sender
+          const client = clients.get(member.userId);
+          if (client && client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              type: 'message_deleted',
+              payload: {
+                messageId,
+                conversationId: message.conversationId
+              }
+            }));
+          }
+        }
+      }
     } catch (error) {
       next(error);
     }
@@ -322,6 +352,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updatedMessage = await storage.editMessage(messageId, content);
       res.json(updatedMessage);
+      
+      // Notify conversation members about the edited message
+      const members = await storage.getConversationMembers(message.conversationId);
+      for (const member of members) {
+        if (member.userId !== req.user.id) { // Don't notify the sender
+          const client = clients.get(member.userId);
+          if (client && client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              type: 'message_edited',
+              payload: updatedMessage
+            }));
+          }
+        }
+      }
     } catch (error) {
       next(error);
     }

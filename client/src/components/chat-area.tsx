@@ -64,12 +64,28 @@ export default function ChatArea({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
   
-  // Listen for new messages via WebSocket
+  // Listen for WebSocket messages related to the current conversation
   useEffect(() => {
-    if (lastMessage && lastMessage.type === 'new_message') {
-      // Only refresh if the message belongs to the current conversation
-      if (lastMessage.payload && lastMessage.payload.conversationId === conversationId) {
-        refetchMessages();
+    if (!lastMessage) return;
+    
+    // Check if the message is for the current conversation
+    const messagePayload = lastMessage.payload || {};
+    const messageConversationId = messagePayload.conversationId;
+    
+    if (messageConversationId === conversationId) {
+      switch (lastMessage.type) {
+        case 'new_message':
+          // Refresh messages when a new message arrives
+          refetchMessages();
+          break;
+        case 'message_edited':
+          // Refresh messages when a message is edited
+          refetchMessages();
+          break;
+        case 'message_deleted':
+          // Refresh messages when a message is deleted
+          refetchMessages();
+          break;
       }
     }
   }, [lastMessage, conversationId, refetchMessages]);

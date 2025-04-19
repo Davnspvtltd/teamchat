@@ -49,8 +49,11 @@ export default function HomePage() {
 
     switch (lastMessage.type) {
       case 'new_message':
-        // Refetch conversations to update last message
+        // Refetch conversations to update last message previews
         refetchConversations();
+        
+        // Log new messages so we can confirm they're being received via WebSocket
+        console.log('Received new message via WebSocket:', lastMessage.payload);
         break;
       case 'user_status':
         if (lastMessage.payload.status === 'online') {
