@@ -209,14 +209,9 @@ export default function ChatArea({
   const handleSendMessage = () => {
     if (!messageText.trim()) return;
     
+    // Only use mutation - don't send direct WebSocket message
+    // This prevents duplicate messages as the backend will broadcast the message via WebSocket
     sendMessageMutation.mutate(messageText);
-    
-    // Use WebSocket to send message for real-time updates
-    sendMessage("message", {
-      conversationId,
-      content: messageText,
-      attachments: []
-    });
     
     // Clear input
     setMessageText("");
@@ -381,7 +376,7 @@ export default function ChatArea({
                   <div className={cn(
                     "p-3 rounded-lg shadow-sm",
                     message.senderId === currentUser?.id 
-                      ? "bg-primary-600 text-white" 
+                      ? "bg-primary text-white border border-primary-600" 
                       : "bg-white dark:bg-gray-800"
                   )}>
                     <p className={cn(
