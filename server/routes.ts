@@ -5,6 +5,10 @@ import { storage } from "./storage";
 import { setupAuth } from "./auth";
 import { z } from "zod";
 import { insertMessageSchema, insertConversationSchema, insertConversationMemberSchema } from "@shared/schema";
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 interface WebSocketClient extends WebSocket {
   userId?: number;
