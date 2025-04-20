@@ -74,19 +74,20 @@ app.use((req, res, next) => {
   }
 
   // Port and host setup
-  const port = parseInt(process.env.PORT || "5000", 10);
-  const host = process.env.HOST || "127.0.0.1";
+  const port = process.env.PORT ?? 10000; // optional default, but PORT is always set by Render
+const host = "0.0.0.0";
 
-  // ✅ Windows-safe listen block
-  server.listen(port, host, () => {
-    log(`🚀 Server running in ${process.env.NODE_ENV || "development"} mode`);
-    log(`📡 Listening on http://${host}:${port}`);
-    if (process.env.DATABASE_URL) {
-      log(`🔗 Connected DB: ${process.env.DATABASE_URL.replace(/:.+@/, ":****@")}`);
-    } else {
-      log("⚠️ No DATABASE_URL found in .env");
-    }
-  });
+server.listen(port, host, () => {
+  log(`🚀 Server running in ${process.env.NODE_ENV || "production"} mode`);
+  log(`📡 Listening on http://${host}:${port}`);
+
+  if (process.env.DATABASE_URL) {
+    log(`🔗 Connected DB: ${process.env.DATABASE_URL.replace(/:.+@/, ":****@")}`);
+  } else {
+    log("⚠️ No DATABASE_URL found in .env");
+  }
+});
+
 
   // Prevent crashing from unhandled errors
   process.on("uncaughtException", (error) => {
