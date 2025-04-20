@@ -18,7 +18,6 @@ export default defineConfig({
         ]
       : []),
   ],
-  base:"/chat",
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
