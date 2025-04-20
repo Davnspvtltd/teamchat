@@ -1,17 +1,18 @@
 {
-  "version": 2,
-
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist/public",
-
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "dist/index.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "dist/public/index.html"
-    }
-  ]
-}
+    "version": 2,
+  
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist/public",
+  
+    "routes": [
+      {
+        "src": "/api/(.*)",
+        "dest": "dist/index.js"
+      },
+      {
+        "src": "/(.*)",
+        "dest": "client/src/index.html"
+      }
+    ]
+  }
+  
