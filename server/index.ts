@@ -45,7 +45,7 @@ app.use((req, res, next) => {
   try {
     const dbConnected = await testDatabaseConnection();
     if (dbConnected) {
-      log("Database connection test successful");
+      log("✅ Database connection test successful");
     } else {
       console.error("❌ Failed to connect to database. Check your DATABASE_URL in .env");
       console.error("Current DATABASE_URL: " + (process.env.DATABASE_URL?.replace(/:.+@/, ":****@") || "not set"));
@@ -73,14 +73,13 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Port and host setup
+  // Port and host setup for Render
   const port = parseInt(process.env.PORT || "5003", 10);
-  const host = process.env.HOST || "127.0.0.1";
 
-  // ✅ Windows-safe listen block
-  server.listen(port, host, () => {
+  // ✅ Use 0.0.0.0 for Render/public deployment
+  server.listen(port, "0.0.0.0", () => {
     log(`🚀 Server running in ${process.env.NODE_ENV || "development"} mode`);
-    log(`📡 Listening on http://${host}:${port}`);
+    log(`📡 Listening on http://0.0.0.0:${port}`);
     if (process.env.DATABASE_URL) {
       log(`🔗 Connected DB: ${process.env.DATABASE_URL.replace(/:.+@/, ":****@")}`);
     } else {
