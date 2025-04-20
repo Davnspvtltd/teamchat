@@ -74,7 +74,7 @@ app.use((req, res, next) => {
   }
 
   // Port and host setup
-  const port = parseInt(process.env.PORT || "5000", 10);
+  const port = parseInt(process.env.PORT || "5003", 10);
   const host = process.env.HOST || "127.0.0.1";
 
   // ✅ Windows-safe listen block
